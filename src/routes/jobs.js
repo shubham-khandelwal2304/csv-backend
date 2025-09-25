@@ -145,6 +145,11 @@ router.get('/:jobId/status', asyncHandler(async (req, res) => {
     };
   }
 
+  // Include download URL if job is completed
+  if (job.status === 'done' && job.presignedUrl) {
+    response.downloadUrl = job.presignedUrl;
+  }
+
   // Include error details if job failed
   if (job.status === 'error' && job.error) {
     response.error = job.error;
