@@ -47,6 +47,12 @@ class N8nClient {
       
       // Add job ID as form field
       formData.append('jobId', jobId);
+      
+      // Add original filename as form field for n8n workflow
+      formData.append('originalName', originalName);
+      formData.append('originalFilename', originalName);
+      formData.append('fileName', originalName);
+      formData.append('csvFileName', originalName.replace('.pdf', '.csv'));
 
       console.log(`📤 Forwarding PDF to n8n: ${originalName} (Job: ${jobId})`);
 
