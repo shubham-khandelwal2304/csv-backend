@@ -77,8 +77,8 @@ router.post('/callback', upload.single('csv'), asyncHandler(async (req, res) => 
     // Generate download URL
     const downloadUrl = await mongoClient.generateDownloadUrl(jobId);
 
-    // Mark job as completed
-    jobStore.completeJob(jobId, fileId, downloadUrl);
+    // Mark job as completed with MongoDB details
+    const completedJob = jobStore.completeJob(jobId, fileId, downloadUrl);
 
     // Clean up temporary file
     try {
@@ -88,13 +88,24 @@ router.post('/callback', upload.single('csv'), asyncHandler(async (req, res) => 
     }
 
     console.log(`✅ Job completed: ${jobId} - CSV stored in MongoDB: ${fileId}`);
+    
+    // Log execution completion if available
+    if (completedJob && completedJob.executionId) {
+      console.log(`🎯 n8n execution ${completedJob.executionId} completed successfully for job ${jobId}`);
+    }
 
     res.json({
       ok: true,
       jobId,
       message: 'CSV processed and stored successfully',
       fileId,
-      downloadUrl
+      downloadUrl,
+      status: 'completed',
+      execution: completedJob && completedJob.executionId ? {
+        id: completedJob.executionId,
+        status: 'completed',
+        message: 'Workflow execution completed successfully'
+      } : undefined
     });
 
   } catch (error) {

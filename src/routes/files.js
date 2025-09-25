@@ -47,6 +47,40 @@ router.get('/download/:fileId', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/files - List all files from MongoDB
+ */
+router.get('/', asyncHandler(async (req, res) => {
+  try {
+    const stats = await mongoClient.getStats();
+    
+    // Format files for frontend consumption
+    const files = stats.files.map(file => ({
+      id: file.id,
+      filename: file.filename,
+      size: file.size,
+      uploadDate: file.uploadDate,
+      jobId: file.jobId,
+      downloadUrl: `/api/files/download/${file.id}`,
+      formattedSize: formatFileSize(file.size),
+      formattedDate: new Date(file.uploadDate).toLocaleString()
+    }));
+
+    // Sort by upload date (newest first)
+    files.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+
+    res.json({
+      files,
+      totalFiles: stats.totalFiles,
+      totalSize: stats.totalSize,
+      formattedTotalSize: formatFileSize(stats.totalSize)
+    });
+  } catch (error) {
+    console.error(`❌ Failed to list files: ${error.message}`);
+    throw createError('Failed to retrieve files', 500, 'FILES_LIST_ERROR');
+  }
+}));
+
+/**
  * GET /api/files/stats - Get MongoDB storage statistics (development only)
  */
 if (process.env.NODE_ENV !== 'production') {
@@ -57,6 +91,17 @@ if (process.env.NODE_ENV !== 'production') {
       type: 'mongodb-gridfs'
     });
   }));
+}
+
+/**
+ * Helper function to format file sizes
+ */
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 /**

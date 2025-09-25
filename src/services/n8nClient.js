@@ -63,6 +63,24 @@ class N8nClient {
 
       console.log(`✅ n8n accepted PDF: ${originalName} (Status: ${response.status})`);
       
+      // Handle immediate response with execution details
+      const responseData = response.data;
+      if (Array.isArray(responseData) && responseData.length > 0) {
+        const executionInfo = responseData[0];
+        console.log(`📊 n8n execution started: ${executionInfo.executionId} (Status: ${executionInfo.status})`);
+        
+        return {
+          success: true,
+          status: response.status,
+          data: responseData,
+          executionId: executionInfo.executionId,
+          executionStatus: executionInfo.status,
+          message: executionInfo.message,
+          webhookUrl: executionInfo.webhookUrl,
+          executionMode: executionInfo.executionMode
+        };
+      }
+      
       return {
         success: true,
         status: response.status,

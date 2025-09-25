@@ -47,11 +47,23 @@ router.post('/', upload.single('file'), asyncHandler(async (req, res) => {
     jobStore.createJob(jobId, originalname);
     
     // Forward to n8n webhook
-    await n8nClient.forwardToN8n({
+    const n8nResponse = await n8nClient.forwardToN8n({
       filePath,
       originalName: originalname,
       jobId
     });
+
+    // Update job with n8n execution details if available
+    if (n8nResponse.executionId) {
+      jobStore.updateExecutionDetails(jobId, {
+        executionId: n8nResponse.executionId,
+        executionStatus: n8nResponse.executionStatus,
+        executionMessage: n8nResponse.message,
+        webhookUrl: n8nResponse.webhookUrl,
+        executionMode: n8nResponse.executionMode
+      });
+      console.log(`📊 n8n execution tracking: ${n8nResponse.executionId} for job ${jobId}`);
+    }
 
     // Clean up temporary file after forwarding
     try {
@@ -62,11 +74,24 @@ router.post('/', upload.single('file'), asyncHandler(async (req, res) => {
 
     console.log(`✅ Job created: ${jobId} for ${originalname}`);
 
-    res.status(201).json({
+    // Return enhanced response with execution details
+    const response = {
       jobId,
       message: 'PDF uploaded and processing started',
       filename: originalname
-    });
+    };
+
+    // Include execution details if available
+    if (n8nResponse.executionId) {
+      response.execution = {
+        id: n8nResponse.executionId,
+        status: n8nResponse.executionStatus,
+        message: n8nResponse.message,
+        mode: n8nResponse.executionMode
+      };
+    }
+
+    res.status(201).json(response);
 
   } catch (error) {
     // Clean up temporary file on error
@@ -108,6 +133,17 @@ router.get('/:jobId/status', asyncHandler(async (req, res) => {
     createdAt: job.createdAt,
     updatedAt: job.updatedAt
   };
+
+  // Add execution details if available
+  if (job.executionId) {
+    response.execution = {
+      id: job.executionId,
+      status: job.executionStatus,
+      message: job.executionMessage,
+      mode: job.executionMode,
+      webhookUrl: job.webhookUrl
+    };
+  }
 
   // Include error details if job failed
   if (job.status === 'error' && job.error) {
@@ -160,6 +196,40 @@ router.get('/:jobId/download-url', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/jobs/:jobId/execution - Get n8n execution details
+ */
+router.get('/:jobId/execution', asyncHandler(async (req, res) => {
+  const { jobId } = req.params;
+
+  if (!isValidJobId(jobId)) {
+    throw createError('Invalid job ID format', 400, 'INVALID_JOB_ID');
+  }
+
+  const job = jobStore.getJob(jobId);
+  if (!job) {
+    throw createError('Job not found', 404, 'JOB_NOT_FOUND');
+  }
+
+  if (!job.executionId) {
+    throw createError('No execution information available for this job', 404, 'NO_EXECUTION_INFO');
+  }
+
+  res.json({
+    jobId,
+    execution: {
+      id: job.executionId,
+      status: job.executionStatus,
+      message: job.executionMessage,
+      mode: job.executionMode,
+      webhookUrl: job.webhookUrl
+    },
+    jobStatus: job.status,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt
+  });
+}));
+
+/**
  * GET /api/jobs - List all jobs (for debugging)
  * Only available in development
  */
@@ -168,8 +238,14 @@ if (process.env.NODE_ENV !== 'production') {
     const allJobs = jobStore.getAllJobs();
     const stats = jobStore.getStats();
     
+    // Enhanced stats with execution info
+    const executionStats = {
+      withExecution: allJobs.filter(([, job]) => job.executionId).length,
+      withoutExecution: allJobs.filter(([, job]) => !job.executionId).length
+    };
+    
     res.json({
-      stats,
+      stats: { ...stats, execution: executionStats },
       jobs: allJobs.map(([jobId, job]) => ({
         jobId,
         ...job

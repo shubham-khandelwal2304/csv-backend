@@ -7,6 +7,11 @@
  *   r2Key?: string,
  *   presignedUrl?: string,
  *   error?: string,
+ *   executionId?: string,
+ *   executionStatus?: string,
+ *   executionMessage?: string,
+ *   webhookUrl?: string,
+ *   executionMode?: string,
  *   createdAt: Date,
  *   updatedAt: Date
  * }
@@ -95,6 +100,28 @@ class JobStore {
     return this.updateJob(jobId, {
       status: 'error',
       error
+    });
+  }
+
+  /**
+   * Update job with n8n execution details
+   * @param {string} jobId 
+   * @param {object} executionDetails 
+   * @param {string} executionDetails.executionId
+   * @param {string} executionDetails.executionStatus
+   * @param {string} executionDetails.executionMessage
+   * @param {string} executionDetails.webhookUrl
+   * @param {string} executionDetails.executionMode
+   * @returns {object|null} The updated job or null if not found
+   */
+  updateExecutionDetails(jobId, executionDetails) {
+    const { executionId, executionStatus, executionMessage, webhookUrl, executionMode } = executionDetails;
+    return this.updateJob(jobId, {
+      executionId,
+      executionStatus,
+      executionMessage,
+      webhookUrl,
+      executionMode
     });
   }
 
