@@ -20,12 +20,26 @@ class MongoClient_CSV {
     }
 
     try {
-      const mongoUrl = process.env.MONGODB_URL || 'mongodb://localhost:27017';
+      const mongoUrl = process.env.MONGODB_URI || process.env.MONGODB_URL || 'mongodb://localhost:27017';
       const dbName = process.env.MONGODB_DB_NAME || 'pdf2csv';
 
-      console.log(`🔌 Connecting to MongoDB: ${mongoUrl}`);
+      console.log(`🔌 Connecting to MongoDB: ${mongoUrl.replace(/\/\/.*:.*@/, '//***:***@')}`);
       
-      this.client = new MongoClient(mongoUrl);
+      // MongoDB connection options for better SSL/TLS handling
+      const options = {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000, // 5 second timeout
+        socketTimeoutMS: 45000, // 45 second socket timeout
+        maxPoolSize: 10, // Maintain up to 10 socket connections
+        serverApi: {
+          version: '1',
+          strict: true,
+          deprecationErrors: true,
+        }
+      };
+
+      this.client = new MongoClient(mongoUrl, options);
       await this.client.connect();
       
       this.db = this.client.db(dbName);

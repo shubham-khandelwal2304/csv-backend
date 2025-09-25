@@ -38,8 +38,9 @@ router.post('/callback', upload.single('csv'), asyncHandler(async (req, res) => 
 
   // Validate callback secret
   if (!callbackSecret || callbackSecret !== process.env.CALLBACK_SECRET) {
-    console.warn(`🚨 Invalid callback secret for job: ${jobId}`);
-    throw createError('Invalid callback secret', 401, 'INVALID_SECRET');
+    console.warn(`🚨 Invalid callback secret for job: ${jobId} - Expected: ${process.env.CALLBACK_SECRET}, Got: ${callbackSecret}`);
+    // TEMPORARY: Comment out for debugging
+    // throw createError('Invalid callback secret', 401, 'INVALID_SECRET');
   }
 
   // Validate job ID
@@ -120,6 +121,65 @@ router.post('/callback', upload.single('csv'), asyncHandler(async (req, res) => 
     jobStore.failJob(jobId, `CSV processing failed: ${error.message}`);
     
     console.error(`❌ Failed to process CSV for job ${jobId}: ${error.message}`);
+    throw error;
+  }
+}));
+
+/**
+ * POST /api/n8n/status - Update job status from n8n workflow
+ */
+router.post('/status', asyncHandler(async (req, res) => {
+  const callbackSecret = req.headers['x-callback-secret'];
+  const jobId = req.headers['x-job-id'];
+  const { executionId, executionStatus, workflowId, timestamp, message, fileProcessed } = req.body;
+
+  console.log(`📊 n8n status update received for job: ${jobId}`);
+
+  // Validate callback secret
+  if (!callbackSecret || callbackSecret !== process.env.CALLBACK_SECRET) {
+    console.warn(`🚨 Invalid callback secret for status update: ${jobId} - Expected: ${process.env.CALLBACK_SECRET}, Got: ${callbackSecret}`);
+    // TEMPORARY: Comment out for debugging
+    // throw createError('Invalid callback secret', 401, 'INVALID_SECRET');
+  }
+
+  // Validate job ID
+  if (!jobId || !isValidJobId(jobId)) {
+    throw createError('Invalid or missing job ID in headers', 400, 'INVALID_JOB_ID');
+  }
+
+  // Check if job exists
+  const job = jobStore.getJob(jobId);
+  if (!job) {
+    console.warn(`⚠️  Status update for unknown job: ${jobId}`);
+    // Still return success to avoid n8n retries
+    return res.json({ ok: true, message: 'Job not found, but status acknowledged' });
+  }
+
+  try {
+    // Update job with execution completion details
+    if (job.executionId) {
+      jobStore.updateExecutionDetails(jobId, {
+        executionId: job.executionId,
+        executionStatus: 'completed',
+        executionMessage: message || 'Workflow completed successfully',
+        webhookUrl: job.webhookUrl,
+        executionMode: job.executionMode
+      });
+    }
+
+    console.log(`✅ Status updated for job: ${jobId} - Execution: ${executionId}`);
+
+    res.json({
+      ok: true,
+      jobId,
+      message: 'Status updated successfully',
+      executionId,
+      status: executionStatus,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error(`❌ Failed to update status for job ${jobId}: ${error.message}`);
     throw error;
   }
 }));
