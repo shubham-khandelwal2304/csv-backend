@@ -94,6 +94,50 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 /**
+ * DELETE /api/files/:fileId - Delete a file from MongoDB
+ */
+router.delete('/:fileId', asyncHandler(async (req, res) => {
+  const { fileId } = req.params;
+  
+  if (!fileId) {
+    throw createError('File ID is required', 400, 'MISSING_FILE_ID');
+  }
+
+  try {
+    // Find the file first to get metadata
+    const stats = await mongoClient.getStats();
+    const file = stats.files.find(f => f.id === fileId);
+    
+    if (!file) {
+      throw createError('File not found', 404, 'FILE_NOT_FOUND');
+    }
+
+    // Delete from MongoDB using jobId (since deleteCSV uses jobId)
+    const deleted = await mongoClient.deleteCSV(file.jobId);
+    
+    if (!deleted) {
+      throw createError('Failed to delete file', 500, 'DELETE_FAILED');
+    }
+
+    console.log(`🗑️  File deleted: ${file.filename} (ID: ${fileId})`);
+
+    res.json({
+      success: true,
+      message: 'File deleted successfully',
+      fileId,
+      filename: file.filename
+    });
+
+  } catch (error) {
+    console.error(`❌ Failed to delete file ${fileId}: ${error.message}`);
+    if (error.message.includes('not found')) {
+      throw createError('File not found', 404, 'FILE_NOT_FOUND');
+    }
+    throw createError('Failed to delete file', 500, 'DELETE_ERROR');
+  }
+}));
+
+/**
  * Helper function to format file sizes
  */
 function formatFileSize(bytes) {
