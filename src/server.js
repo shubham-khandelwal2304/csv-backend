@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 8080;
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || '*',
+  origin: process.env.ALLOWED_ORIGIN || 'https://pdf2csv-frontend-esxq.vercel.app/',
   credentials: true
 }));
 
