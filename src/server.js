@@ -13,9 +13,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// CORS configuration
+// CORS configuration supporting multiple origins and removing trailing slashes
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || '').split(',').map(origin => origin.trim().replace(/\/$/, ''));
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || 'https://pdf2csv-frontend-esxq.vercel.app/',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
