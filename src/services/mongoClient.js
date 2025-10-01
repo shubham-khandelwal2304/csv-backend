@@ -20,7 +20,7 @@ class MongoClient_CSV {
     }
 
     try {
-      const mongoUrl = process.env.MONGODB_URI || process.env.MONGODB_URL || 'mongodb://localhost:27017';
+      const mongoUrl = process.env.MONGODB_URI ;
       const dbName = process.env.MONGODB_DB_NAME || 'pdf2csv';
 
       console.log(`🔌 Connecting to MongoDB: ${mongoUrl.replace(/\/\/.*:.*@/, '//***:***@')}`);
@@ -118,7 +118,7 @@ class MongoClient_CSV {
       const fileId = file[0]._id.toString();
       
       // Return URL that points to our download endpoint
-      const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
+      const baseUrl = process.env.BASE_URL;
       const downloadUrl = `${baseUrl}/api/files/download/${fileId}`;
       
       console.log(`🔗 Generated download URL for job ${jobId}: ${downloadUrl}`);

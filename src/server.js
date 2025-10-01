@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 8080;
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:5173',
+  origin: process.env.ALLOWED_ORIGIN ,
   credentials: true
 }));
 
@@ -44,7 +44,7 @@ app.use('*', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 PDF2CSV Backend running on port ${PORT}`);
-  console.log(`📡 CORS enabled for: ${process.env.ALLOWED_ORIGIN || 'http://localhost:5173'}`);
+  console.log(`📡 CORS enabled for: ${process.env.ALLOWED_ORIGIN }`);
   console.log(`🔗 n8n webhook: ${process.env.N8N_WEBHOOK_URL || 'NOT_CONFIGURED'}`);
 });
 
