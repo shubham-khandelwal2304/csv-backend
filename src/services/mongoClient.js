@@ -20,7 +20,7 @@ class MongoClient_CSV {
     }
 
     try {
-      const mongoUrl = process.env.MONGODB_URI ;
+  const mongoUrl = process.env.MONGODB_URL ;
       const dbName = process.env.MONGODB_DB_NAME || 'pdf2csv';
 
       console.log(`🔌 Connecting to MongoDB: ${mongoUrl.replace(/\/\/.*:.*@/, '//***:***@')}`);
