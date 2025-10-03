@@ -9,3 +9,15 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: MONGODB_URL
+        value: mongodb+srv://your-mongodb-connection-string
+      - key: MONGODB_DB_NAME
+        value: pdf2csv
+      - key: ALLOWED_ORIGIN
+        value: https://pdf2csv-frontend-esxq.vercel.app
+      - key: N8N_WEBHOOK_URL
+        value: https://n8n-excollo.azurewebsites.net/webhook-test/pdf-to-csv
+      - key: CALLBACK_SECRET
+        value: your-secret-key-here
+      - key: BASE_URL
+        value: https://csv-backend-oyvb.onrender.com
