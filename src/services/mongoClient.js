@@ -118,7 +118,7 @@ class MongoClient_CSV {
       const fileId = file[0]._id.toString();
       
       // Return URL that points to our download endpoint
-      const baseUrl = process.env.BASE_URL;
+      const baseUrl = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://csv-backend-oyvb.onrender.com';
       const downloadUrl = `${baseUrl}/api/files/download/${fileId}`;
       
       console.log(`🔗 Generated download URL for job ${jobId}: ${downloadUrl}`);
