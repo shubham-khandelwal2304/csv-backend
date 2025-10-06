@@ -209,8 +209,23 @@ class MongoClient_CSV {
     await this.connect();
 
     try {
-      const files = await this.bucket.find({}).toArray();
+      const startTime = Date.now();
+      
+      // Optimize query with projection to only fetch needed fields
+      const files = await this.bucket.find({}, {
+        projection: {
+          _id: 1,
+          filename: 1,
+          length: 1,
+          uploadDate: 1,
+          'metadata.jobId': 1
+        }
+      }).sort({ uploadDate: -1 }).toArray(); // Sort in database for better performance
+      
       const totalSize = files.reduce((sum, file) => sum + file.length, 0);
+      const queryTime = Date.now() - startTime;
+      
+      console.log(`📊 MongoDB query time: ${queryTime}ms (${files.length} files)`);
       
       return {
         totalFiles: files.length,

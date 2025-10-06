@@ -51,28 +51,36 @@ router.get('/download/:fileId', asyncHandler(async (req, res) => {
  */
 router.get('/', asyncHandler(async (req, res) => {
   try {
+    const startTime = Date.now();
     const stats = await mongoClient.getStats();
     
-    // Format files for frontend consumption
-    const files = stats.files.map(file => ({
-      id: file.id,
-      filename: file.filename,
-      size: file.size,
-      uploadDate: file.uploadDate,
-      jobId: file.jobId,
-      downloadUrl: `/api/files/download/${file.id}`,
-      formattedSize: formatFileSize(file.size),
-      formattedDate: new Date(file.uploadDate).toLocaleString()
-    }));
+    // Format files for frontend consumption with optimized processing
+    const files = stats.files
+      .map(file => ({
+        id: file.id,
+        filename: file.filename,
+        size: file.size,
+        uploadDate: file.uploadDate,
+        jobId: file.jobId,
+        downloadUrl: `/api/files/download/${file.id}`,
+        formattedSize: formatFileSize(file.size),
+        formattedDate: new Date(file.uploadDate).toLocaleString()
+      }))
+      .sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate)); // Sort by upload date (newest first)
 
-    // Sort by upload date (newest first)
-    files.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+    const processingTime = Date.now() - startTime;
+    console.log(`📁 Files API response time: ${processingTime}ms (${files.length} files)`);
+
+    // Set cache headers for better performance
+    res.setHeader('Cache-Control', 'private, max-age=60'); // Cache for 1 minute
+    res.setHeader('X-Response-Time', `${processingTime}ms`);
 
     res.json({
       files,
       totalFiles: stats.totalFiles,
       totalSize: stats.totalSize,
-      formattedTotalSize: formatFileSize(stats.totalSize)
+      formattedTotalSize: formatFileSize(stats.totalSize),
+      responseTime: processingTime
     });
   } catch (error) {
     console.error(`❌ Failed to list files: ${error.message}`);
