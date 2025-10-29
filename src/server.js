@@ -13,6 +13,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Trust proxy when behind reverse proxy (Render, Vercel, Nginx, etc.)
+// This is important for correct IP detection in rate limiting
+if (process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', true);
+}
+
 // CORS configuration supporting multiple origins and removing trailing slashes
 const allowedOrigins = (process.env.ALLOWED_ORIGIN || '').split(',').map(origin => origin.trim().replace(/\/$/, ''));
 app.use(cors({

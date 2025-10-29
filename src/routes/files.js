@@ -1,13 +1,14 @@
 const express = require('express');
 const mongoClient = require('../services/mongoClient');
 const { asyncHandler, createError } = require('../middleware/errors');
+const { downloadLimiter, listLimiter, deleteLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
 /**
  * GET /api/files/download/:fileId - Download CSV file from MongoDB
  */
-router.get('/download/:fileId', asyncHandler(async (req, res) => {
+router.get('/download/:fileId', downloadLimiter, asyncHandler(async (req, res) => {
   const { fileId } = req.params;
   
   if (!fileId) {
@@ -49,7 +50,7 @@ router.get('/download/:fileId', asyncHandler(async (req, res) => {
 /**
  * GET /api/files - List all files from MongoDB
  */
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', listLimiter, asyncHandler(async (req, res) => {
   try {
     const startTime = Date.now();
     const stats = await mongoClient.getStats();
@@ -104,7 +105,7 @@ if (process.env.NODE_ENV !== 'production') {
 /**
  * DELETE /api/files/:fileId - Delete a file from MongoDB
  */
-router.delete('/:fileId', asyncHandler(async (req, res) => {
+router.delete('/:fileId', deleteLimiter, asyncHandler(async (req, res) => {
   const { fileId } = req.params;
   
   if (!fileId) {

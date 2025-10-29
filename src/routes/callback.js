@@ -6,6 +6,7 @@ const { isValidJobId } = require('../utils/ids');
 const jobStore = require('../services/jobStore');
 const mongoClient = require('../services/mongoClient');
 const { asyncHandler, createError } = require('../middleware/errors');
+const { callbackLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ const upload = multer({
 /**
  * POST /api/n8n/callback - Receive CSV from n8n workflow
  */
-router.post('/callback', upload.single('csv'), asyncHandler(async (req, res) => {
+router.post('/callback', callbackLimiter, upload.single('csv'), asyncHandler(async (req, res) => {
   const callbackSecret = req.headers['x-callback-secret'];
   const jobId = req.headers['x-job-id'];
 
@@ -128,7 +129,7 @@ router.post('/callback', upload.single('csv'), asyncHandler(async (req, res) => 
 /**
  * POST /api/n8n/status - Update job status from n8n workflow
  */
-router.post('/status', asyncHandler(async (req, res) => {
+router.post('/status', callbackLimiter, asyncHandler(async (req, res) => {
   const callbackSecret = req.headers['x-callback-secret'];
   const jobId = req.headers['x-job-id'];
   const { executionId, executionStatus, workflowId, timestamp, message, fileProcessed } = req.body;
@@ -187,7 +188,7 @@ router.post('/status', asyncHandler(async (req, res) => {
 /**
  * POST /api/n8n/error - Receive error notifications from n8n (optional)
  */
-router.post('/error', asyncHandler(async (req, res) => {
+router.post('/error', callbackLimiter, asyncHandler(async (req, res) => {
   const callbackSecret = req.headers['x-callback-secret'];
   const jobId = req.headers['x-job-id'];
   const { error, details } = req.body;

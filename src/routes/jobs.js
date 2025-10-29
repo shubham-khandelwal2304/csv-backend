@@ -7,6 +7,7 @@ const jobStore = require('../services/jobStore');
 const n8nClient = require('../services/n8nClient');
 const mongoClient = require('../services/mongoClient');
 const { asyncHandler, createError } = require('../middleware/errors');
+const { uploadLimiter, statusLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ const upload = multer({
 /**
  * POST /api/jobs - Upload PDF and start conversion
  */
-router.post('/', upload.single('file'), asyncHandler(async (req, res) => {
+router.post('/', uploadLimiter, upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) {
     throw createError('No file uploaded', 400, 'NO_FILE');
   }
@@ -113,7 +114,7 @@ router.post('/', upload.single('file'), asyncHandler(async (req, res) => {
 /**
  * GET /api/jobs/:jobId/status - Get job status
  */
-router.get('/:jobId/status', asyncHandler(async (req, res) => {
+router.get('/:jobId/status', statusLimiter, asyncHandler(async (req, res) => {
   const { jobId } = req.params;
 
   if (!isValidJobId(jobId)) {
