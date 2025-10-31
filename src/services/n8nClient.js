@@ -75,7 +75,6 @@ class N8nClient {
         maxBodyLength: 50 * 1024 * 1024
       });
 
-      const fileType = mimetype.startsWith('image/') ? 'image' : 'PDF';
       console.log(`✅ n8n accepted ${fileType}: ${originalName} (Status: ${response.status})`);
       
       // Handle immediate response with execution details
