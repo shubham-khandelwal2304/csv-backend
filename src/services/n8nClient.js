@@ -7,7 +7,7 @@ dotenv.config();
 
 
 /**
- * n8n client for forwarding PDFs to the webhook
+ * n8n client for forwarding PDFs and images to the webhook
  */
 class N8nClient {
   constructor() {
@@ -19,14 +19,15 @@ class N8nClient {
   }
 
   /**
-   * Forward PDF file to n8n webhook with job ID
+   * Forward PDF or image file to n8n webhook with job ID
    * @param {object} params
-   * @param {string} params.filePath - Path to the PDF file
+   * @param {string} params.filePath - Path to the file
    * @param {string} params.originalName - Original filename
    * @param {string} params.jobId - Job ID for tracking
+   * @param {string} params.mimetype - File MIME type
    * @returns {Promise<object>} Response from n8n
    */
-  async forwardToN8n({ filePath, originalName, jobId }) {
+  async forwardToN8n({ filePath, originalName, jobId, mimetype }) {
     // Refresh webhook URL in case it was loaded after constructor
     this.webhookUrl = process.env.N8N_WEBHOOK_URL;
     
@@ -38,11 +39,16 @@ class N8nClient {
       // Create form data with file and job ID
       const formData = new FormData();
       
-      // Add the PDF file
+      // Determine content type and CSV filename
+      const contentType = mimetype || 'application/pdf';
+      const fileExtension = path.extname(originalName).toLowerCase();
+      const csvFileName = originalName.replace(/\.(pdf|jpg|jpeg|png|gif|webp|tiff|tif|bmp)$/i, '.csv');
+      
+      // Add the file (PDF or image)
       const fileStream = fs.createReadStream(filePath);
       formData.append('file', fileStream, {
         filename: originalName,
-        contentType: 'application/pdf'
+        contentType: contentType
       });
       
       // Add job ID as form field
@@ -52,9 +58,11 @@ class N8nClient {
       formData.append('originalName', originalName);
       formData.append('originalFilename', originalName);
       formData.append('fileName', originalName);
-      formData.append('csvFileName', originalName.replace('.pdf', '.csv'));
+      formData.append('csvFileName', csvFileName);
+      formData.append('fileType', mimetype);
 
-      console.log(`📤 Forwarding PDF to n8n: ${originalName} (Job: ${jobId})`);
+      const fileType = mimetype.startsWith('image/') ? 'image' : 'PDF';
+      console.log(`📤 Forwarding ${fileType} to n8n: ${originalName} (Job: ${jobId})`);
 
       // Send to n8n webhook
       const response = await axios.post(this.webhookUrl, formData, {
@@ -67,7 +75,8 @@ class N8nClient {
         maxBodyLength: 50 * 1024 * 1024
       });
 
-      console.log(`✅ n8n accepted PDF: ${originalName} (Status: ${response.status})`);
+      const fileType = mimetype.startsWith('image/') ? 'image' : 'PDF';
+      console.log(`✅ n8n accepted ${fileType}: ${originalName} (Status: ${response.status})`);
       
       // Handle immediate response with execution details
       const responseData = response.data;

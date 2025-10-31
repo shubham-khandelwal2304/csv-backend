@@ -11,7 +11,7 @@ const { uploadLimiter, statusLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
-// Configure multer for file uploads
+// Configure multer for file uploads (PDF and images)
 const upload = multer({
   dest: path.join(__dirname, '../../tmp'),
   limits: {
@@ -19,25 +19,37 @@ const upload = multer({
     files: 1
   },
   fileFilter: (req, file, cb) => {
-    // Only accept PDF files
-    if (file.mimetype !== 'application/pdf') {
-      return cb(createError('Only PDF files are allowed', 400, 'INVALID_FILE_TYPE'));
+    // Accept PDF files and image files
+    const allowedMimeTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/tiff',
+      'image/bmp'
+    ];
+    
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      return cb(createError('Only PDF and image files (JPEG, PNG, GIF, WebP, TIFF, BMP) are allowed', 400, 'INVALID_FILE_TYPE'));
     }
     cb(null, true);
   }
 });
 
 /**
- * POST /api/jobs - Upload PDF and start conversion
+ * POST /api/jobs - Upload PDF or image invoice and start conversion
  */
 router.post('/', uploadLimiter, upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) {
     throw createError('No file uploaded', 400, 'NO_FILE');
   }
 
-  const { originalname, path: filePath, size } = req.file;
+  const { originalname, path: filePath, size, mimetype } = req.file;
   
-  console.log(`📄 Received PDF upload: ${originalname} (${(size / 1024 / 1024).toFixed(2)}MB)`);
+  const fileType = mimetype.startsWith('image/') ? 'image' : 'PDF';
+  console.log(`📄 Received ${fileType} upload: ${originalname} (${(size / 1024 / 1024).toFixed(2)}MB)`);
 
   // Generate unique job ID outside try block so it's accessible in catch
   const jobId = generateJobId();
@@ -51,7 +63,8 @@ router.post('/', uploadLimiter, upload.single('file'), asyncHandler(async (req, 
     const n8nResponse = await n8nClient.forwardToN8n({
       filePath,
       originalName: originalname,
-      jobId
+      jobId,
+      mimetype
     });
 
     // Update job with n8n execution details if available
