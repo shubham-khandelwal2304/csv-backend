@@ -42,7 +42,7 @@ class N8nClient {
       // Determine content type and CSV filename
       const contentType = mimetype || 'application/pdf';
       const fileExtension = path.extname(originalName).toLowerCase();
-      const csvFileName = originalName.replace(/\.(pdf|jpg|jpeg|png|gif|webp|tiff|tif|bmp)$/i, '.csv');
+      const csvFileName = originalName.replace(/\.(pdf|jpg|jpeg)$/i, '.csv');
       
       // Add the file (PDF or image)
       const fileStream = fs.createReadStream(filePath);

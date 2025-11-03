@@ -11,7 +11,7 @@ const { uploadLimiter, statusLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
-// Configure multer for file uploads (PDF and images)
+// Configure multer for file uploads (PDF and JPEG/JPG images only)
 const upload = multer({
   dest: path.join(__dirname, '../../tmp'),
   limits: {
@@ -19,20 +19,15 @@ const upload = multer({
     files: 1
   },
   fileFilter: (req, file, cb) => {
-    // Accept PDF files and image files
+    // Accept PDF files and JPEG/JPG image files only
     const allowedMimeTypes = [
       'application/pdf',
       'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'image/tiff',
-      'image/bmp'
+      'image/jpg'
     ];
     
     if (!allowedMimeTypes.includes(file.mimetype)) {
-      return cb(createError('Only PDF and image files (JPEG, PNG, GIF, WebP, TIFF, BMP) are allowed', 400, 'INVALID_FILE_TYPE'));
+      return cb(createError('Only PDF and image files (JPEG, JPG) are allowed', 400, 'INVALID_FILE_TYPE'));
     }
     cb(null, true);
   }

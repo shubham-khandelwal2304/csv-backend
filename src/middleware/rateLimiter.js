@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 
 /**
  * Helper function to get environment variable with default
@@ -26,7 +27,7 @@ const uploadLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip + '-upload';
+    return ipKeyGenerator(req) + '-upload';
   }
 });
 
@@ -45,7 +46,7 @@ const statusLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip + '-status';
+    return ipKeyGenerator(req) + '-status';
   }
 });
 
@@ -64,7 +65,7 @@ const downloadLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip + '-download';
+    return ipKeyGenerator(req) + '-download';
   }
 });
 
@@ -83,7 +84,7 @@ const listLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip + '-list';
+    return ipKeyGenerator(req) + '-list';
   }
 });
 
@@ -102,7 +103,7 @@ const deleteLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip + '-delete';
+    return ipKeyGenerator(req) + '-delete';
   }
 });
 
@@ -120,7 +121,7 @@ const callbackLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip + '-callback';
+    return ipKeyGenerator(req) + '-callback';
   },
   skip: (req) => {
     const callbackSecret = req.headers['x-callback-secret'];
